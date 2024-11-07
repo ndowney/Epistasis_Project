@@ -23,45 +23,49 @@ def genc(an_array):
 
 
 #Parse the SNP data
-f=open('elife-73983-fig3-data2-v2.txt','r')
+f=open('elife-73983-fig3-data2-v2-Modified.txt','r')
 header=f.readline()
-snips=defaultdict(set)
+snps=defaultdict(set)
 for line in f:
     parts=line.strip().split()
     env=parts[0]
-    snips[env].add(int(parts[1]))
+    snps[env].add(int(parts[1]))
 f.close()
 
 
 envs=['23C','25C','27C','30C','33C','35C','37C','4NQO','cu','eth','gu','li','mann','mol','raff','sds','suloc','ynb']
-for env in envs[-2:]:
-    numSnips=len(snips[env])
-    print("Environment {}: Number of SNPs:{}".format(env,numSnips))
-    theseSnips=np.empty(shape=(100000,numSnips),dtype='uint8')
+for env in envs:
+    numSnps=len(snps[env])
+    print("Environment {}: Number of SNPs:{}".format(env,numSnps))
+    theseSnps=np.empty(shape=(99950,numSnps),dtype='uint8')
     snrow=0
-    snipinds=list(snips[env])
-    snipinds.sort()
+    snpinds=list(snps[env])
+    snpinds.sort()
     for findex in range(1,6):
         f=open('orig/geno_data_{}.txt'.format(findex))
         print("File: orig/geno_data_{}.txt                      ".format(findex))
         line=f.readline()
         while(line):
-            if snrow % 100 == 0:
-                print('Parsing strain {} of 100000'.format(snrow),end='\r')
+            if snrow % 50 == 0:
+                print('Parsing strain {} of 99950'.format(snrow),end='\r')
             line=[float(x) for x in line.strip().split()]
             line.pop(0) #remove index in first column
             lineb=np.array([int(x+0.5) for x in line],dtype='uint8')
             sncol=0
-            for i in snipinds:
+            for i in snpinds:
                 try:
-                    theseSnips[snrow,sncol]=lineb[i]
+                    theseSnps[snrow,sncol]=lineb[i]
                     sncol=sncol+1
                 except IndexError:
-                    pass
+                    raise
             line=f.readline()
             snrow=snrow+1
         f.close()
-    np.save("Snips_{}".format(env),theseSnips)
-    del theseSnips
+    ffile='orig/pheno_data_{}.txt'.format(env)
+    pheno=np.genfromtxt(ffile,skip_header=1,skip_footer=1)
+    fitness=pheno[:,1]
+    np.savez("Data_{}".format(env),SNPs=theseSnps,fitness=fitness)
+    del theseSnps
+    del fitness
 
 
